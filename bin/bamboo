@@ -1,0 +1,116 @@
+#!/usr/bin/env node
+
+const path = require('path');
+const fs = require('fs');
+const archiver = require('archiver');
+const ora = require('ora');
+const ufs = require('@tuu/ufs');
+const GITInfo = require('@tuu/git-commit-version');
+const chalk = require('chalk');
+let appRootPath = process.cwd();
+appRootPath = path.join(appRootPath + '/');
+
+const pkg = require(appRootPath + 'package.json');
+
+let bambooConfig = null;
+
+let hasBconfig = ufs.fsExistsSync(appRootPath + 'bamboo.config.json');
+
+if (hasBconfig) {
+	bambooConfig = require(appRootPath + 'bamboo.config.json');
+}
+const log = console.log;
+
+let packaged = {
+	app: [
+		{
+			dir: 'app/'
+		},
+		{
+			dir: 'config/'
+		},
+		{
+			dir: 'views/'
+		},
+		{
+			dir: 'node_modules/'
+		},
+		{
+			dir: 'test/'
+		}
+	],
+	static: [
+		{
+			dir: 'dist/',
+			nsame: true
+		}
+	]
+};
+
+let StaticName = 's1';
+
+let pkgName = pkg.name;
+
+let releasePath = GITInfo.GIT_VERSION || 'release';
+
+if (bambooConfig) {
+	packaged = bambooConfig.packaged;
+	StaticName = bambooConfig.staticName || StaticName;
+}
+
+// let distPath = appRootPath + path.join(releasePath + "/" + pkgName + "/");
+let distPath = appRootPath + path.join(releasePath + '/');
+console.log('distPath');
+console.log(distPath);
+
+if (!fs.existsSync(distPath)) {
+	ufs.makeDir(distPath);
+}
+
+for (var key in packaged) {
+	ZipStart(packaged[key], key);
+}
+
+function ZipStart(item, key) {
+	let itemData = item;
+	let zname = pkgName;
+	if (key == 'static') {
+		zname = StaticName + '.' + zname;
+	}
+	console.time(zname);
+	let spinner = ora('打包:' + zname + '').start();
+	spinner.color = 'green';
+	let output = fs.createWriteStream(distPath + zname + '.zip');
+	let archive = archiver('zip');
+
+	let len = itemData.length;
+	for (let i = 0; i < len; i++) {
+		let _file = itemData[i].file;
+		if (_file) {
+			console.log(_file);
+			// append a file
+			archive.file(_file, { name: _file });
+		} else {
+			let dir = itemData[i].dir;
+			let distr = dir;
+			let nsame = itemData[i].nsame;
+			nsame ? (distr = false) : '';
+			archive.directory('./' + dir, distr);
+		}
+	}
+
+	archive.on('error', function(err) {
+		throw err;
+	});
+	output.on('close', function() {
+		log('...');
+		log(chalk.green('打包 ' + zname + ' 完成. 请到' + distPath + '目录下载'));
+		log(chalk.green('总字节数:' + archive.pointer()));
+		spinner.stop();
+		log('-');
+		console.timeEnd(zname);
+	});
+	archive.pipe(output);
+
+	archive.finalize();
+}

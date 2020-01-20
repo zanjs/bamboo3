@@ -1,0 +1,21 @@
+{
+	"name": "bamboo3",
+	"version": "0.0.373",
+	"description": "> TODO: description",
+	"author": "zan <suihuasheng@gmail.com>",
+	"license": "ISC",
+	"bin": {
+		"bamboo3": "bin/bamboo"
+	},
+	"main": "bin/bamboo",
+	"scripts": {
+		"test": "echo \"Error: run tests from root\" && exit 1"
+	},
+	"dependencies": {
+		"@tuu/git-commit-version": "^0.0.373",
+		"@tuu/ufs": "^0.0.373",
+		"archiver": "^3.1.1",
+		"chalk": "^2.4.2",
+		"ora": "^3.4.0"
+	}
+}
