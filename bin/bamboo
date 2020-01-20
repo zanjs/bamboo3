@@ -50,8 +50,9 @@ let packaged = {
 let StaticName = 's1';
 
 let pkgName = pkg.name;
+let pkgVersion = pkg.version;
 
-let releasePath = GITInfo.GIT_VERSION || 'release';
+let releasePath = GITInfo.GIT_VERSION || pkgVersion || 'release';
 
 if (bambooConfig) {
 	packaged = bambooConfig.packaged;
@@ -62,6 +63,8 @@ if (bambooConfig) {
 let distPath = appRootPath + path.join(releasePath + '/');
 console.log('distPath');
 console.log(distPath);
+
+let bufferVersion = Buffer.from(releasePath);
 
 if (!fs.existsSync(distPath)) {
 	ufs.makeDir(distPath);
@@ -98,6 +101,10 @@ function ZipStart(item, key) {
 			archive.directory('./' + dir, distr);
 		}
 	}
+
+	archive.append(bufferVersion, {
+		name: 'version.txt'
+	});
 
 	archive.on('error', function(err) {
 		throw err;
